@@ -1,0 +1,13 @@
+{
+  "name": "priorix",
+  "private": true,
+  "version": "1.0.0",
+  "packageManager": "pnpm@10.33.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "echo \"Run apps individually\""
+  }
+}

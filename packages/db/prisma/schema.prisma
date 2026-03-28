@@ -1,0 +1,80 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String   @id  @default(uuid())
+  email          String   @unique
+  createdAt      DateTime @default(now())
+
+  tasks          Task[]
+}
+
+model Task {
+  id             String   @id  @default(uuid())
+  title          String
+  link           String?
+  priority       Priority
+  type           TaskType
+
+  dateTime       DateTime
+  endTime        DateTime?
+
+  status         TaskStatus   @default(PENDING)   
+
+  userId         String
+  user           User   @relation(fields: [userId], references: [id])
+
+  reminders      ReminderJob[]
+
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt   
+}
+
+model ReminderJob {
+  id             String    @id  @default(uuid())
+  taskId         String
+  task           Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  scheduledTime  DateTime
+  jobId          String    // BullMQ job id
+
+  createdAt      DateTime  @default(now())
+}
+
+model ReminderLog {
+  id             String    @id   @default(uuid())
+  taskId         String
+  seenAt         DateTime  @default(now())
+  status         String
+}
+
+enum Priority {
+  P1
+  P2
+  P3
+  P4
+  P5
+}
+
+enum TaskType {
+  FIXED
+  DEADLINE
+}
+
+enum TaskStatus {
+  PENDING
+  COMPLETED
+  MISSED
+  AWAITING_CONFIRMATION
+}
