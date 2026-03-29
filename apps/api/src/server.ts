@@ -1,9 +1,19 @@
 import express from "express";
 import { prisma } from "../../../packages/db/src/client";
 import { generateReminderTimes, getReminderOffsets } from "./utils/remainder";
+import { Queue } from "bullmq";
+import IORedis from "ioredis";
 
 const app = express();
 app.use(express.json());
+
+const connection = new IORedis({
+  host: "127.0.0.1",
+  port: 6379,
+  maxRetriesPerRequest: null
+});
+
+const reminderQueue = new Queue("reminder-queue", { connection })
 
 app.get("/", async (req, res) => {
   try {
@@ -55,15 +65,28 @@ app.post("/task", async (req, res) => {
     const reminderTimes = generateReminderTimes(taskTime, offsets);
 
     const reminderJobs = await Promise.all(
-      reminderTimes.map((time) => 
-        prisma.reminderJob.create({
+      reminderTimes.map(async (time) => {
+        const delay = time.getTime() - Date.now();
+
+        const job = await reminderQueue.add(
+          "reminder",
+          {
+            taskId: task.id,
+            title: task.title
+          },
+          {
+            delay
+          }
+        );
+
+        return prisma.reminderJob.create({
           data: {
             taskId: task.id,
             scheduledTime: time,
-            jobId: "pending"
+            jobId: job.id as string
           }
-        })
-      )
+        });
+      })
     );
 
     res.json({ task, reminders: reminderJobs });

@@ -9,5 +9,14 @@
   ],
   "scripts": {
     "dev": "echo \"Run apps individually\""
+  },
+  "dependencies": {
+    "bullmq": "^5.71.1",
+    "ioredis": "^5.10.1"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^6.0.2"
   }
 }
