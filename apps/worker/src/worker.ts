@@ -2,7 +2,10 @@ import IORedis from "ioredis";
 import { Worker } from "bullmq";
 import nodemailer from "nodemailer";
 import dotenv from "dotenv";
+import { error } from "node:console";
 dotenv.config();
+
+import { prisma } from "../../../packages/db/src/client";
 
 const connection = new IORedis({
     host: "127.0.0.1",
@@ -23,18 +26,42 @@ const worker = new Worker(
     async (job) => {
         console.log("Executing reminder job: ", job.data);
 
-        const { title } = job.data;
+        const { title, email, taskId } = job.data;
 
-        await transporter.sendMail({
-            from: process.env.EMAIL_USER,
-            to: process.env.EMAIL_USER,
-            subject: "Task Reminder",
-            text: `Hey Praveen, 
-                You have reminder for: "${title}"
-                Stay focused and complete it.
+        if(!email) {
+            throw new Error("Email not found in job data");
+        }
+        
+        try {
+            await transporter.sendMail({
+                from: process.env.EMAIL_USER,
+                to: email,
+                subject: "Task Reminder",
+                text: `Hey, 
+                    You have reminder for: "${title}"
+                    Stay focused and complete it.
 
-            -- Priorix`
-        })
+                -- Priorix`
+            });
+
+            await prisma.reminderLog.create({
+                data: {
+                    taskId,
+                    status: "SUCCESS"
+                }
+            });
+        } catch(err) {
+            console.error("Email failed:", err);
+
+            await prisma.reminderLog.create({
+                data: {
+                    taskId,
+                    status: "FAILED"
+                }
+            });
+
+            throw err;
+        }
     },
     { connection }
 );

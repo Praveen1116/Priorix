@@ -49,6 +49,14 @@ app.post("/task", async (req, res) => {
 
     const taskTime = new Date(dateTime);
 
+    const user = await prisma.user.findUnique({
+      where: { id: userId }
+    });
+
+    if(!user) {
+      return res.status(404).json({ err: "User not found" });
+    }
+
     const task = await prisma.task.create({
       data: {
         title,
@@ -68,11 +76,14 @@ app.post("/task", async (req, res) => {
       reminderTimes.map(async (time) => {
         const delay = time.getTime() - Date.now();
 
+        if(delay <= 0) return null;
+
         const job = await reminderQueue.add(
           "reminder",
           {
             taskId: task.id,
-            title: task.title
+            title: task.title,
+            email: user.email
           },
           {
             delay
