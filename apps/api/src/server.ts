@@ -106,6 +106,39 @@ app.post("/task", async (req, res) => {
     console.error(err);
     res.status(500).json( { err } )
   }
-})
+});
+
+app.patch("/task/:id/complete", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const task = await prisma.task.update({
+      where: { id },
+      data: { status : "COMPLETED" }
+    });
+
+    const reminders = await prisma.reminderJob.findMany({
+      where: { taskId: id }
+    });
+
+    for (const reminder of reminders) {
+      if(!reminder.jobId) continue;
+
+      const job = await reminderQueue.getJob(reminder.jobId);
+
+      if(job) {
+        await job.remove();
+      }
+    }
+
+    res.json({
+      message: "Task completed and reminders cancelled",
+      task
+    });
+  } catch(err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to complete the task" });
+  }
+});
 
 app.listen(3000);
