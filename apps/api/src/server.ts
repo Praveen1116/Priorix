@@ -2,7 +2,11 @@ import express from "express";
 import { prisma } from "../../../packages/db/src/client";
 import { generateReminderTimes, getReminderOffsets } from "./utils/remainder";
 import { Queue } from "bullmq";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 import IORedis from "ioredis";
+import { error } from "node:console";
+import { authMiddleware, AuthRequest } from "./middleware/auth";
 
 const app = express();
 app.use(express.json());
@@ -24,28 +28,66 @@ app.get("/", async (req, res) => {
   }
 });
 
-
-app.post("/user", async (req, res) => {
+app.post("/register", async (req, res) => {
   try {
-    const { email }  = req.body;
+    const { email, password } = req.body;
+
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = await prisma.user.create({
       data: {
-        email,
-      },
+        email, 
+        password: hashedPassword
+      }
     });
 
-    res.json(user);
-  } catch (err)
+    res.json({ message: "User registered", userId: user.id});
+  } catch(err)
   {
     console.error(err);
-    res.status(500).json({ err: "Failed to create user"});
+    res.status(500).json({ error: "Registration failed" });
   }
 });
 
-app.post("/task", async (req, res) => {
+app.post("/login", async (req, res) => {
   try {
-    const { title, link, priority, type, dateTime, endTime, userId } = req.body;
+    const { email , password } = req.body;
+
+    const user = await prisma.user.findUnique({
+      where: { email }
+    });
+
+    if(!user) {
+      return res.status(400).json({ error: "User not found" });
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if(!isMatch) {
+      return res.status(400).json({ error: "Invalid credentials" });
+    }
+
+    const token = jwt.sign(
+      { userId: user.id },
+      process.env.JWT_SECRET as string,
+      { expiresIn: "7d" }
+    );
+
+    res.json(token);
+  } catch (err) {
+    console.error(err);
+
+    res.status(500).json({ error: "Login failed" });
+  }
+});
+
+app.post("/task", authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    const { title, link, priority, type, dateTime, endTime } = req.body;
+    const userId = req.userId;
+
+    if(!userId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
 
     const taskTime = new Date(dateTime);
 
@@ -108,9 +150,30 @@ app.post("/task", async (req, res) => {
   }
 });
 
-app.patch("/task/:id/complete", async (req, res) => {
+app.patch("/task/:id/complete", authMiddleware, async (req: AuthRequest, res) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id;
+    const userId = req.userId;
+
+    if(typeof id !== "string") {
+      return res.status(400).json({ error: "Invalid task id" });
+    }
+
+    if(!userId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const existingTask = await prisma.task.findUnique({
+      where: { id }
+    })
+
+    if(!existingTask) {
+      return res.status(404).json({ error: "Task not found" });
+    }
+
+    if(existingTask.userId !== userId) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
 
     const task = await prisma.task.update({
       where: { id },
