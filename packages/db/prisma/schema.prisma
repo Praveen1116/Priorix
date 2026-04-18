@@ -30,6 +30,7 @@ model Task {
 
   dateTime       DateTime
   endTime        DateTime?
+  timeZone       String
 
   status         TaskStatus   @default(PENDING)   
 
