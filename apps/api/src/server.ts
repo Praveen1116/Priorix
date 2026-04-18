@@ -21,7 +21,11 @@ const connection = new IORedis(process.env.REDIS_URL as string, {
   maxRetriesPerRequest: null
 });
 
-const reminderQueue = new Queue("reminder-queue", { connection })
+const reminderQueue = new Queue("reminder-queue", { connection });
+
+app.get("/", (req, res) => {
+  res.json({ message: "API is running" });
+});
 
 app.get("/tasks", authMiddleware, async (req: AuthRequest, res) => {
   try {
