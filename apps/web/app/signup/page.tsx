@@ -7,7 +7,7 @@ export default function SignupPage() {
   const [password, setPassword] = useState("");
 
   const handleSignup = async () => {
-    await fetch("http://localhost:4000/register", {
+    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/register`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

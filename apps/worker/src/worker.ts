@@ -7,9 +7,7 @@ dotenv.config();
 
 import { prisma } from "../../../packages/db/src/client";
 
-const connection = new IORedis({
-    host: "127.0.0.1",
-    port: 6379,
+const connection = new IORedis(process.env.REDIS_URL as string, {
     maxRetriesPerRequest: null
 });
 

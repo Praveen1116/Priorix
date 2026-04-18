@@ -79,7 +79,7 @@ export default function Dashboard() {
   };
 
   const fetchTasks = async () => {
-    const res = await fetch("http://localhost:4000/tasks", {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/tasks`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -99,7 +99,7 @@ export default function Dashboard() {
       return;
     }
 
-    const res = await fetch("http://localhost:4000/task", {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/task`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -130,7 +130,7 @@ export default function Dashboard() {
   };
 
   const completeTask = async (id: string) => {
-    const res = await fetch(`http://localhost:4000/task/${id}/complete`, {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/task/${id}/complete`, {
       method: "PATCH",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -147,7 +147,7 @@ export default function Dashboard() {
   };
 
   const deleteTask = async (id: string) => {
-    const res = await fetch(`http://localhost:4000/task/${id}`, {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/task/${id}`, {
       method: "DELETE",
       headers: {
         Authorization: `Bearer ${token}`,

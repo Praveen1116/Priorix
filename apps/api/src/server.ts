@@ -15,11 +15,9 @@ dotenv.config();
 
 const app = express();
 app.use(express.json());
-app.use(cors());
+app.use(cors({ origin: "*" }));
 
-const connection = new IORedis({
-  host: "127.0.0.1",
-  port: 6379,
+const connection = new IORedis(process.env.REDIS_URL as string, {
   maxRetriesPerRequest: null
 });
 
@@ -310,4 +308,8 @@ app.delete("/task/:id", authMiddleware, async (req: AuthRequest, res) => {
 });
 
 
-app.listen(4000);
+const PORT = process.env.PORT || 4000;
+
+app.listen(PORT, () => {
+  console.log(`API running on port ${PORT}`);
+})
