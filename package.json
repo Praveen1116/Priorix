@@ -11,11 +11,13 @@
     "dev": "echo \"Run apps individually\""
   },
   "dependencies": {
+    "@prisma/client": "^5.22.0",
     "bullmq": "^5.71.1",
     "ioredis": "^5.10.1"
   },
   "devDependencies": {
     "@types/node": "^25.5.0",
+    "prisma": "^5.22.0",
     "ts-node-dev": "^2.0.0",
     "typescript": "^6.0.2"
   }
