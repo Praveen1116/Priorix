@@ -17,8 +17,12 @@ const app = express();
 app.use(express.json());
 app.use(cors({ origin: "*" }));
 
-const connection = new IORedis(process.env.REDIS_URL as string, {
-  maxRetriesPerRequest: null
+const connection = process.env.REDIS_URL
+  ? new IORedis(process.env.REDIS_URL, { maxRetriesPerRequest: null })
+  : new IORedis({
+      host: "127.0.0.1",
+      port: 6379,
+      maxRetriesPerRequest: null,
 });
 
 const reminderQueue = new Queue("reminder-queue", { connection });
@@ -77,6 +81,10 @@ app.post("/register", async (req, res) => {
     res.json({ message: "User registered", userId: user.id});
   } catch(err)
   {
+    if ((err as { code?: string }).code === "P2002") {
+      return res.status(409).json({ error: "Email already registered" });
+    }
+
     console.error(err);
     res.status(500).json({ error: "Registration failed" });
   }

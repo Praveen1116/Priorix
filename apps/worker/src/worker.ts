@@ -7,8 +7,12 @@ dotenv.config();
 
 import { prisma } from "../../../packages/db/src/client";
 
-const connection = new IORedis(process.env.REDIS_URL as string, {
-    maxRetriesPerRequest: null
+const connection = process.env.REDIS_URL
+  ? new IORedis(process.env.REDIS_URL, { maxRetriesPerRequest: null })
+  : new IORedis({
+      host: "127.0.0.1",
+      port: 6379,
+      maxRetriesPerRequest: null,
 });
 
 const transporter = nodemailer.createTransport({
